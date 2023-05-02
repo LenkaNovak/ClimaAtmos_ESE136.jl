@@ -12,11 +12,29 @@ parsed_args["surface_scheme"] = "bulk"
 parsed_args["vert_diff"] = true
 parsed_args["rad"] = "gray"
 parsed_args["C_E"] = Float64(0.0044)
-parsed_args["dt_save_to_sol"] = "0.5days" # frequency at which the output is saved to cache
-parsed_args["dt_save_to_disk"] = "0.5days" # frequency at which the output is saved to hdf5 files
-parsed_args["t_end"] = "2days" # end of simulation
-job_id = parsed_args["job_id"] = "my_first_test"
+parsed_args["kappa_4"] = Float64(2e17)
+parsed_args["rayleigh_sponge"] = true # rayleigh spponge at the top
+parsed_args["alpha_rayleigh_uh"] = 0
+parsed_args["zd_rayleigh"] = 30e3
 const FT = parsed_args["FLOAT_TYPE"] == "Float64" ? Float64 : Float32
+
+# give your job a name
+job_id = parsed_args["job_id"] = "my_first_run"
+
+
+# set the length of the simulation, and the appropriate output parameters
+debug_mode = false
+if debug_mode
+    parsed_args["dt_save_to_sol"] = "1days" # frequency at which the output is saved to cache
+    parsed_args["dt_save_to_disk"] = "1days" # frequency at which the output is saved to hdf5 files
+    parsed_args["t_end"] = "2days" # end of simulation
+    diagnostics_day_range = collect(0:1:2) # range of days for averaging post-processed disgnostics output
+else
+    parsed_args["dt_save_to_sol"] = "2days" # frequency at which the output is saved to cache
+    parsed_args["dt_save_to_disk"] = "2days" # frequency at which the output is saved to hdf5 files
+    parsed_args["t_end"] = "100days" # end of simulation
+    diagnostics_day_range = collect(0:50:100) # range of days for averaging post-processed disgnostics output
+end
 
 # load parameters
 include("parameter_set.jl")
@@ -197,13 +215,13 @@ if more_serious_post_processing
             :temperature,
             nc_dir = "$cwd/../output/nc_output_$job_id",
             fig_dir = "$cwd/../output/nc_plots_$job_id",
-            day_range = collect(0:1:5),
+            day_range = diagnostics_day_range,
         )
         plot_time_mean(
             :zonal_wind,
             nc_dir = "$cwd/../output/nc_output_$job_id",
             fig_dir = "$cwd/../output/nc_plots_$job_id",
-            day_range = collect(0:1:5),
+            day_range = diagnostics_day_range,
         )
     end
 end
