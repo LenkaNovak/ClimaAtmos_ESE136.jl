@@ -13,9 +13,9 @@ parsed_args["vert_diff"] = true
 parsed_args["rad"] = "gray"
 parsed_args["C_E"] = Float64(0.0044)
 parsed_args["kappa_4"] = Float64(2e17)
-parsed_args["rayleigh_sponge"] = true # rayleigh spponge at the top
+parsed_args["rayleigh_sponge"] = true # rayleigh sponge at the top
 parsed_args["alpha_rayleigh_uh"] = 0
-parsed_args["zd_rayleigh"] = 30e3
+parsed_args["zd_rayleigh"] = 25e3
 const FT = parsed_args["FLOAT_TYPE"] == "Float64" ? Float64 : Float32
 
 # give your job a name

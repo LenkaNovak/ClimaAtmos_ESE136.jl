@@ -28,7 +28,7 @@ For this exercise we will be running a truncated version of ClimaAtmos.jl, the a
 
 # Experiment 2: Hypo-hydrostatic scaling
 - Many aspects of the large-scale circulation can be reproduced on a smaller planet (if the rotation and frictional timescales are adapted accordingly). This allows cheaper simulations, and/or better resolved simulations which can coarsely resolve convection. Can you reproduce the Earth-sized aquaplanet climate on a dwarf planet?
-    - Lets use a scaling factor of `X`= 10
+    - Lets use a scaling factor of `X`= 8
     - radius / `X` (`planet_radius` in examples/hybrid/parameter_set.jl)
     - corollas parameter x `X` (`Omega` in examples/hybrid/parameter_set.jl)
     - all inverse damping timescales x `X` (`parsed_args["C_E"]` in examples/hybrid/parameter_set.jl)
