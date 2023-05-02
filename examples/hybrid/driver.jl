@@ -1,46 +1,37 @@
 import ClimaAtmos as CA
 
-(s, parsed_args_defaults) = CA.parse_commandline()
-if !(@isdefined parsed_args)
-    parsed_args = parsed_args_defaults
-end
+# load in default CLI arguments
+(s, parsed_args) = CA.parse_commandline()
 
-# TODO: can we move this into src/?
-using NVTX
-using ClimaComms
-if NVTX.isactive()
-    NVTX.enable_gc_hooks()
-    # makes output on buildkite a bit nicer
-    if ClimaComms.iamroot(comms_ctx)
-        atexit() do
-            println("--- Saving profiler information")
-        end
-    end
-end
-
-parse_arg(pa, key, default) = isnothing(pa[key]) ? default : pa[key]
-
+# overwrite default CLI arguments
+parsed_args["dt"] = "580secs"
+parsed_args["moist"] = "equil"
+parsed_args["precip_model"] = "0M"
+parsed_args["apply_limiter"] = false
+parsed_args["surface_scheme"] = "bulk"
+parsed_args["vert_diff"] = true
+parsed_args["rad"] = "gray"
+parsed_args["C_E"] = Float64(0.0044)
+parsed_args["dt_save_to_sol"] = "0.5days" # frequency at which the output is saved to cache
+parsed_args["dt_save_to_disk"] = "0.5days" # frequency at which the output is saved to hdf5 files
+parsed_args["t_end"] = "2days" # end of simulation
+job_id = parsed_args["job_id"] = "my_first_test"
 const FT = parsed_args["FLOAT_TYPE"] == "Float64" ? Float64 : Float32
 
+# load parameters
 include("parameter_set.jl")
 params, parsed_args = create_parameter_set(FT, parsed_args, CA.cli_defaults(s))
 
+# setup communication for parallel computing
 include("comms.jl")
 fps = parsed_args["fps"]
+
+# import local modules
 import ClimaAtmos.RRTMGPInterface as RRTMGPI
 import ClimaAtmos.InitialConditions as ICs
-
-include(joinpath(pkgdir(CA), "artifacts", "artifact_funcs.jl"))
-
 import ClimaAtmos.TurbulenceConvection as TC
 
-atmos = CA.get_atmos(FT, parsed_args, params.turbconv_params)
-@info "AtmosModel: \n$(summary(atmos))"
-numerics = CA.get_numerics(parsed_args)
-simulation = CA.get_simulation(FT, parsed_args)
-initial_condition = CA.get_initial_condition(parsed_args)
-
-# TODO: use import instead of using
+# instantiate the needded packages
 using Colors
 using OrdinaryDiffEq
 using PrettyTables
@@ -76,6 +67,17 @@ import ClimaCore: enable_threading
 const enable_clima_core_threading = parsed_args["enable_threading"]
 enable_threading() = enable_clima_core_threading
 
+# include any external artifacts
+include(joinpath(pkgdir(CA), "artifacts", "artifact_funcs.jl"))
+
+# define the model mathematical formulation (with boundary conditions), numerics, timestepping and initial condition specification
+atmos = CA.get_atmos(FT, parsed_args, params.turbconv_params)
+@info "AtmosModel: \n$(summary(atmos))"
+numerics = CA.get_numerics(parsed_args)
+simulation = CA.get_simulation(FT, parsed_args)
+initial_condition = CA.get_initial_condition(parsed_args)
+
+# initialize the model's prognostic state vector
 @time "Allocating Y" if simulation.restart
     (Y, t_start) = CA.get_state_restart(comms_ctx)
     spaces = CA.get_spaces_restart(Y)
@@ -90,6 +92,7 @@ else
     t_start = FT(0)
 end
 
+# initialize the model's cached auxiliary information and variables
 @time "Allocating cache (p)" begin
     p = CA.get_cache(
         Y,
@@ -104,36 +107,30 @@ end
     )
 end
 
-if parsed_args["discrete_hydrostatic_balance"]
-    CA.set_discrete_hydrostatic_balanced_state!(Y, p)
-end
-
+# initialize the timestepping method
 @time "ode_configuration" ode_algo = CA.ode_configuration(Y, parsed_args, atmos)
 
 @time "get_callbacks" callback =
     CA.get_callbacks(parsed_args, simulation, atmos, params)
 tspan = (t_start, simulation.t_end)
+
+# initialize the entire simulation
 @time "args_integrator" integrator_args, integrator_kwargs =
     CA.args_integrator(parsed_args, Y, p, tspan, ode_algo, callback)
-
-if haskey(ENV, "CI_PERF_SKIP_INIT") # for performance analysis
-    throw(:exit_profile_init)
-end
-
 @time "get_integrator" integrator =
     CA.get_integrator(integrator_args, integrator_kwargs)
 
-if haskey(ENV, "CI_PERF_SKIP_RUN") # for performance analysis
-    throw(:exit_profile)
-end
-
-@info "Running" job_id = simulation.job_id output_dir = simulation.output_dir tspan
-
+# logger struct
 struct SimulationResults{S, RT, WT}
     sol::S
     ret_code::RT
     walltime::WT
 end
+
+# print to screen
+@info "Running" job_id = simulation.job_id output_dir = simulation.output_dir tspan
+
+# main stepping function
 function perform_solve!(integrator, simulation, comms_ctx)
     try
         if simulation.is_distributed
@@ -162,5 +159,51 @@ function perform_solve!(integrator, simulation, comms_ctx)
     end
 end
 
-sol_res = perform_solve!(integrator, simulation, comms_ctx)
+# run the model
+sol_res = perform_solve!(integrator, simulation, comms_ctx);
 
+# # inspect your data
+cwd = @__DIR__
+include("$cwd/../../post_processing/plot/plot_model_data.jl")
+# end step plots
+png_end(
+    integrator.sol,
+    :meridional_wind,
+    level = 5,
+    output_dir = "$cwd/../output/",
+)
+png_end(integrator.sol, :zonal_wind, level = 5, output_dir = "$cwd/../output/") # end step
+# animation
+mp4(
+    integrator.sol,
+    :total_energy,
+    level = 2,
+    clims = (0, 1e5),
+    output_dir = "$cwd/../output/",
+)
+
+# more serious post-processing
+more_serious_post_processing = true
+time_mean_post_processing = true
+if more_serious_post_processing
+    cmd = `julia --color=yes --project $cwd/../../post_processing/remap/remap_pipeline.jl --data_dir $cwd/../output/$job_id --out_dir $cwd/../output/nc_output_$job_id`
+    run(cmd)
+    cmd = `julia --color=yes --project $cwd/../../post_processing/plot/plot_pipeline.jl --nc_dir $cwd/../output/nc_output_$job_id --fig_dir $cwd/../output/nc_plots_$job_id --case_name moist_baroclinic_wave`
+    run(cmd)
+    # time-mean plots
+    if time_mean_post_processing
+        include("$cwd/../../post_processing/plot/time_mean_plots.jl")
+        plot_time_mean(
+            :temperature,
+            nc_dir = "$cwd/../output/nc_output_$job_id",
+            fig_dir = "$cwd/../output/nc_plots_$job_id",
+            day_range = collect(0:1:5),
+        )
+        plot_time_mean(
+            :zonal_wind,
+            nc_dir = "$cwd/../output/nc_output_$job_id",
+            fig_dir = "$cwd/../output/nc_plots_$job_id",
+            day_range = collect(0:1:5),
+        )
+    end
+end

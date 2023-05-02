@@ -36,7 +36,7 @@ function create_parameter_set(::Type{FT}, parsed_args, default_args) where {FT}
 end
 
 """
-Merges parsed_args with the toml_dict generated from CLIMAParameters. 
+Merges parsed_args with the toml_dict generated from CLIMAParameters.
 Priority for clashes: parsed_args > toml_dict > default_args
 Converts `nothing` to empty string, since CLIMAParameters does not support type Nothing.
 The dictionary overrides existing toml_dict values if there are clashes.

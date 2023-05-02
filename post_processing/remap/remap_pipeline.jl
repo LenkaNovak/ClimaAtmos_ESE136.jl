@@ -97,5 +97,6 @@ if !parallel_mode
     map(data_files) do data_file
         remap2latlon(data_file, out_dir, remap_tmpdir, weightfile, nlat, nlon)
     end
+    @info "Your remapped data is saved in $out_dir"
     rm(remap_tmpdir; recursive = true)
 end
