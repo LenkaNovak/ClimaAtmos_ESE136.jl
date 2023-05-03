@@ -7,15 +7,6 @@ For this exercise we will be running a truncated version of ClimaAtmos.jl, the a
     - Create a GitHub account (if you don’t already have one)
     - For code modification and figure display we’ll be using VSCode, but you can use your favorite software
 
-- if the above set up doesn't work (e.g., we've had some troubleshooting with WindowsOS), there are three other ways:
-    - cloning and running this tutorial on the HPC cluster (ask if you don't have access yet)
-        - careful not to use the login node. Please request a compute node before calculating anything (e.g., `srun --pty -t 2:00:00 -n 1 /bin/bash -l` for 2 hours on one process)
-    - cloning this tutorial and running the examples using a slurm script - we recommend parallelizing using multithreading, but you can try out parallelizing using MPI too (see `examples/README.md` for instructions).
-    - using [this GoogleColab](https://colab.research.google.com/drive/1d6APTLOeAEoal67nT1ZqGErZRUyCeb1S?usp=sharing) (though this should be your last resort as the full instantiation has to be done with each new run time).
-        - remember to copy this to your drive, and refresh after running the Julia install cell
-        - to change parameters of the cloned `ClimaAtmos_ESE136.jl` (see below), you'll need to access this in your drive (by default it should be saved in your `Colab Notebooks` directory).
-
-
 # Initial exploration
 - Git clone https://github.com/LenkaNovak/ClimaAtmos_ESE136.jl
     - Explore the structure of the model
@@ -47,6 +38,15 @@ For this exercise we will be running a truncated version of ClimaAtmos.jl, the a
 
 # Experiment 3 (optional): Changing the surface temperature
 - Changing the `T_sfc` in the default_cache() - create a localized Gaussian heating patch in the tropics. What can you see?
+
+# Troubleshooting
+- if the above set up doesn't work (e.g., we've had some issues with WindowsOS), there are three other ways:
+    - cloning and running this tutorial on the HPC cluster (ask if you don't have access yet)
+        - careful not to use the login node. Please request a compute node before calculating anything (e.g., `srun --pty -t 2:00:00 -n 1 /bin/bash -l` for 2 hours on one process)
+    - cloning this tutorial and running the examples using a SLURM script - we recommend parallelizing using multithreading, but you can try out parallelizing using MPI too (see `examples/README.md` for instructions).
+    - using [this GoogleColab](https://colab.research.google.com/drive/1d6APTLOeAEoal67nT1ZqGErZRUyCeb1S?usp=sharing) (though this should be your last resort as the full instantiation has to be done with each new run time).
+        - remember to copy this to your drive, and refresh after running the Julia install cell
+        - to change parameters of the cloned `ClimaAtmos_ESE136.jl` (see below), you'll need to access this in your drive (by default it should be saved in your `Colab Notebooks` directory).
 
 # References
 - Aquaplanet experiments
