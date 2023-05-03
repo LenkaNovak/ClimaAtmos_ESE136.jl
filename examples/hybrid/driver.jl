@@ -1,7 +1,9 @@
 import ClimaAtmos as CA
 
 # load in default CLI arguments
-(s, parsed_args) = CA.parse_commandline()
+if @isdefined(parsed_args) == false
+    (s, parsed_args) = CA.parse_commandline()
+end
 
 # overwrite default CLI arguments
 parsed_args["dt"] = "580secs"
@@ -20,7 +22,6 @@ const FT = parsed_args["FLOAT_TYPE"] == "Float64" ? Float64 : Float32
 
 # give your job a name
 job_id = parsed_args["job_id"] = "my_first_run"
-
 
 # set the length of the simulation, and the appropriate output parameters
 debug_mode = false
@@ -212,13 +213,19 @@ if more_serious_post_processing
     if time_mean_post_processing
         include("$cwd/../../post_processing/plot/time_mean_plots.jl")
         plot_time_mean(
-            :temperature,
+            Val(:temperature),
             nc_dir = "$cwd/../output/nc_output_$job_id",
             fig_dir = "$cwd/../output/nc_plots_$job_id",
             day_range = diagnostics_day_range,
         )
         plot_time_mean(
-            :zonal_wind,
+            Val(:zonal_wind),
+            nc_dir = "$cwd/../output/nc_output_$job_id",
+            fig_dir = "$cwd/../output/nc_plots_$job_id",
+            day_range = diagnostics_day_range,
+        )
+        plot_time_mean(
+            Val(:mass_streamfunction),
             nc_dir = "$cwd/../output/nc_output_$job_id",
             fig_dir = "$cwd/../output/nc_plots_$job_id",
             day_range = diagnostics_day_range,

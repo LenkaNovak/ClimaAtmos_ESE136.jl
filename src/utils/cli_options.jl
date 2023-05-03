@@ -345,11 +345,9 @@ function parse_commandline()
         "--toml"
         help = "A toml file used to override model parameters and configurations. In the case of conflicts, CLI arguments take priority over the toml"
         arg_type = String
-        if Sys.MACHINE !== :Darwin # this should be generalized
-            "arg1"
-            help = "a positional argument"
-            required = true
-        end
+        # "arg1" # this is needed for Google Colab
+        # help = "a positional argument"
+        # required = true
     end
     parsed_args = ArgParse.parse_args(ARGS, s)
     return (s, parsed_args)

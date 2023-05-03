@@ -21,16 +21,18 @@ export JULIA_NUM_THREADS=${SLURM_CPUS_PER_TASK:=1}
 
 #export RESTART_FILE=$YOUR_HDF5_RESTART_FILE
 
-CA_EXAMPLE=$HOME'/ClimaAtmos.jl/examples/'
+CA_EXAMPLE=$HOME'/ClimaAtmos_ESE136.jl/examples/'
 DRIVER=$CA_EXAMPLE'hybrid/driver.jl'
 
 julia --project=$CA_EXAMPLE -e 'using Pkg; Pkg.instantiate()'
 julia --project=$CA_EXAMPLE -e 'using Pkg; Pkg.build("HDF5")'
 julia --project=$CA_EXAMPLE -e 'using Pkg; Pkg.API.precompile()'
 
-julia --project=$CA_EXAMPLE --threads=8 $DRIVER --forcing held_suarez --output_dir=$YOUR_SIMULATION_OUTPUT_DIR
+julia --project=$CA_EXAMPLE --threads=8 $DRIVER --output_dir=$YOUR_SIMULATION_OUTPUT_DIR
 
 ```
+After you've customized the output, simulation and log directories, save this into a file and then run `sbatch <your_script_name>` from the Terminal.
+
 
 Here is a sbatch script template for setting up simulations using mpi on caltech central hpc.
 ```
@@ -52,7 +54,7 @@ export JULIA_HDF5_PATH=""
 
 #export RESTART_FILE=$YOUR_HDF5_RESTART_FILE
 
-CA_EXAMPLE=$HOME'/ClimaAtmos.jl/examples/'
+CA_EXAMPLE=$HOME'/ClimaAtmos_ESE136.jl/examples/'
 DRIVER=$CA_EXAMPLE'hybrid/driver.jl'
 
 julia --project=$CA_EXAMPLE -e 'using Pkg; Pkg.instantiate()'
@@ -67,7 +69,7 @@ mpiexec julia --project=$CA_EXAMPLE $DRIVER --forcing held_suarez --output_dir=$
 In the runscript, one needs to specify the following environmant variable:
 * `RESTART_FILE`: if run from a pre-existing hdf5 data saved from a previous simulation.
 
-Commonly used command line arguments for experiment setups are [here](https://clima.github.io/ClimaAtmos.jl/dev/cl_args/).
+Commonly used command line arguments for experiment setups are [here](https://clima.github.io/ClimaAtmos_ESE136.jl/dev/cl_args/).
 
 
 
